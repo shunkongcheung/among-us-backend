@@ -9,7 +9,7 @@ import {
   Root,
 } from "type-graphql";
 
-import { VOTE_SUBSCRIPTION } from "../constants";
+import { ROOM_SUBSCRIPTION, VOTE_SUBSCRIPTION } from "../constants";
 import { Room, Game, VoteEntry, VoteEvent } from "../entities";
 import { GraphQLContext } from "../GraphQLContext";
 
@@ -84,12 +84,13 @@ class VoteResolver {
 
   @Mutation(() => VoteEvent)
   async vote(
-    @PubSub(VOTE_SUBSCRIPTION) publish: Publisher<VoteEvent>,
+    @PubSub(VOTE_SUBSCRIPTION) publishVote: Publisher<VoteEvent>,
+    @PubSub(ROOM_SUBSCRIPTION) publishRoom: Publisher<Room>,
     @Arg("voteEventId") voteEventId: number,
     @Arg("voteById") voteById: number,
     @Arg("voteForId") voteForId?: number
   ) {
-    const voteEvent = await VoteEvent.findOne({
+    let voteEvent = await VoteEvent.findOne({
       where: { id: voteEventId },
       relations: [
         "room",
@@ -101,8 +102,11 @@ class VoteResolver {
       ],
     });
 
-    const { survivers, imposters } = voteEvent.room;
-    const { votes } = voteEvent;
+    const { room, votes } = voteEvent;
+    const { survivers, imposters } = room;
+
+    const prevVote = votes.find((itm) => itm.voteBy.id === voteById);
+    if (!!prevVote) throw new Error("Already voted");
 
     // vote entry creation
     const voteFor = survivers.find((itm) => itm.id === voteForId);
@@ -118,7 +122,6 @@ class VoteResolver {
 
     // check if vote finished
     const voteTotal = votes.length + 1;
-    console.log({ voteFor, voteBy, voteTotal });
     if (voteTotal === survivers.length) {
       // form a vote graph and find the counts
       const voteGraph: { [x: number]: number } = {};
@@ -138,40 +141,34 @@ class VoteResolver {
         { id: null, count: -1 }
       );
 
-      console.log({ voteGraph, voteOutPlayerId });
-
       // find the vote out player
       const voteOutPlayer = survivers.find((itm) => itm.id === voteOutPlayerId);
 
       // store vote out player
+      voteEvent = await VoteEvent.findOne(voteEventId);
       voteEvent.voteOutPlayer = voteOutPlayer;
       voteEvent.isCompleted = true;
       await voteEvent.save();
 
       // filter out vote out player in room
-      voteEvent.room.imposters = imposters.filter(
-        (itm) => itm.id !== voteOutPlayerId
-      );
-      voteEvent.room.survivers = survivers.filter(
-        (itm) => itm.id !== voteOutPlayerId
-      );
+      room.imposters = imposters.filter((itm) => itm.id !== voteOutPlayerId);
+      room.survivers = survivers.filter((itm) => itm.id !== voteOutPlayerId);
 
       // imposter lost
-      const isImposterLost = !voteEvent.room.imposters.length;
+      const isImposterLost = !room.imposters.length;
 
       // crewmate lost
-      const isCrewmateLost =
-        voteEvent.room.survivers.length <= voteEvent.room.imposters.length * 2;
+      const isCrewmateLost = room.survivers.length <= room.imposters.length * 2;
 
       // game is finished
-      if (isImposterLost || isCrewmateLost) {
-        voteEvent.room.endAt = new Date();
-      }
+      const isFinished = isImposterLost || isCrewmateLost;
+      if (isFinished) room.endAt = new Date();
 
-      await voteEvent.room.save();
+      await room.save();
+      if (isFinished) await publishRoom(room);
     }
 
-    await publish(voteEvent);
+    await publishVote(voteEvent);
     return voteEvent;
   }
 
