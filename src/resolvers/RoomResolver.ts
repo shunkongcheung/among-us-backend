@@ -1,6 +1,13 @@
-import { Arg, FieldResolver, Mutation, 
+import {
+  Arg,
+  FieldResolver,
+  Mutation,
+  Publisher,
+  PubSub,
+  Resolver,
+  Root,
   Subscription,
-  Resolver, Root } from "type-graphql";
+} from "type-graphql";
 import { Permutation } from "../../node_modules/js-combinatorics/umd/combinatorics.js";
 
 import { ROOM_SUBSCRIPTION } from "../constants";
@@ -11,7 +18,6 @@ interface FilterArgs {
   context: GraphQLContext;
   payload: Room;
 }
-
 
 @Resolver(() => Room)
 class RoomResolver {
@@ -85,23 +91,28 @@ class RoomResolver {
   }
 
   @Mutation(() => Room)
-  async endRoom(@Arg("roomId") roomId: number) {
+  async endRoom(
+    @Arg("roomId") roomId: number,
+    @PubSub(ROOM_SUBSCRIPTION) publish: Publisher<Room>
+  ) {
     const room = await Room.findOneOrFail({
       where: { id: roomId },
       relations: ["game"],
     });
 
-    const { startAt } = room;
+    const { startAt, endAt } = room;
     const { durationMinute } = room.game;
 
-    const curr = new Date();
+    if (!!endAt) return room;
 
+    const curr = new Date();
     const difference = curr.getTime() - startAt.getTime();
     const diffMin = Math.ceil(difference / (1000 * 60));
 
     if (diffMin > durationMinute) {
       room.endAt = new Date();
       await room.save();
+      await publish(room);
     }
 
     return room;
