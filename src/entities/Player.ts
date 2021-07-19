@@ -11,6 +11,14 @@ class Player extends BaseEntity {
   @Field()
   @Column()
   name: string;
+
+  @Field()
+  @Column()
+  color: string;
+
+  @Field()
+  @Column()
+  hat: string;
 }
 
 export default Player;
