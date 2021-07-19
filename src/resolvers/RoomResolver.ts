@@ -3,8 +3,6 @@ import { Permutation } from "../../node_modules/js-combinatorics/umd/combinatori
 
 import { Game, Player, Room } from "../entities";
 
-const TOTAL_TASK_COUNT = 20;
-
 @Resolver(() => Room)
 class RoomResolver {
   @FieldResolver(() => [Player])
@@ -43,7 +41,6 @@ class RoomResolver {
     room.game = game;
     room.code = await getUniqueRandStr();
     room.completeCount = 0;
-    room.totalTask = TOTAL_TASK_COUNT;
     await room.save();
 
     return room;
