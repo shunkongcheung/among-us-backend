@@ -12,11 +12,10 @@ import { Permutation } from "../../node_modules/js-combinatorics/umd/combinatori
 
 import { ROOM_SUBSCRIPTION } from "../constants";
 import { Game, Player, Room } from "../entities";
-import { GraphQLContext } from "../GraphQLContext";
 
 interface FilterArgs {
-  context: GraphQLContext;
   payload: Room;
+  args: { playerId: number };
 }
 
 @Resolver(() => Room)
@@ -123,10 +122,8 @@ class RoomResolver {
   // subscribe to room
   @Subscription({
     topics: ROOM_SUBSCRIPTION,
-    filter: async (args: FilterArgs) => {
-      const { payload, context } = args;
-      const { req } = context;
-      const playerId = req.headers["Authorization"];
+    filter: async ({ payload, args }: FilterArgs) => {
+      const { playerId } = args;
 
       const room = await Room.createQueryBuilder("room")
         .innerJoin("room.participants", "participants")
@@ -137,7 +134,7 @@ class RoomResolver {
       return !!room;
     },
   })
-  onRoomChange(@Root() room: Room): Room {
+  onRoomChange(@Arg("playerId") playerId: number, @Root() room: Room): Room {
     return room;
   }
 }

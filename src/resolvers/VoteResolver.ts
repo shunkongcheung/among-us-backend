@@ -11,11 +11,10 @@ import {
 
 import { ROOM_SUBSCRIPTION, VOTE_SUBSCRIPTION } from "../constants";
 import { Room, Game, VoteEntry, VoteEvent } from "../entities";
-import { GraphQLContext } from "../GraphQLContext";
 
 interface FilterArgs {
-  context: GraphQLContext;
   payload: Room;
+  args: { playerId: number };
 }
 
 @Resolver(() => VoteEvent)
@@ -174,10 +173,8 @@ class VoteResolver {
 
   @Subscription({
     topics: VOTE_SUBSCRIPTION,
-    filter: async (args: FilterArgs) => {
-      const { payload, context } = args;
-      const { req } = context;
-      const playerId = req.headers["Authorization"];
+    filter: async ({ payload, args }: FilterArgs) => {
+      const { playerId } = args;
 
       const voteEvent = await VoteEvent.findOne({
         where: { id: payload.id },
@@ -193,7 +190,10 @@ class VoteResolver {
       return !!room;
     },
   })
-  onVoteEvent(@Root() voteEvent: VoteEvent): VoteEvent {
+  onVoteEvent(
+    @Arg("playerId") playerId: number,
+    @Root() voteEvent: VoteEvent
+  ): VoteEvent {
     return voteEvent;
   }
 }
