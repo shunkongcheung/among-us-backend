@@ -26,6 +26,10 @@ class PlayerResolver {
 
     if (!player) throw new Error("Invalid player id");
     if (!room) throw new Error("Invalid code");
+
+    const isParticipated = room.participants.find((itm) => itm.id === playerId);
+    if (!!isParticipated) throw new Error("Already part of the group");
+
     if (room.game.maxParticipantCount <= room.participants.length)
       throw new Error("Room is full");
 
