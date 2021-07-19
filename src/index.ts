@@ -29,7 +29,15 @@ import { GraphQLContext } from "./GraphQLContext";
   });
   const server = new ApolloServer({
     schema,
-    context: ({ req, res }): GraphQLContext => ({ req, res }),
+    subscriptions: {
+      onConnect: async (headers) => {
+        return { req: { headers } };
+      },
+    },
+    context: ({ req, res, connection }): GraphQLContext => {
+      if (!req || !req.headers) return connection.context;
+      return { req, res };
+    },
     plugins: [
       ApolloServerLoaderPlugin({ typeormGetConnection: getConnection }),
     ],
@@ -39,13 +47,13 @@ import { GraphQLContext } from "./GraphQLContext";
 
   // start listening
   const httpServer = http.createServer(app);
-  // server.installSubscriptionHandlers(httpServer);
+  server.installSubscriptionHandlers(httpServer);
   httpServer.listen(PORT, () => {
     console.log(
       `🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`
     );
-    // console.log(
-    //   `🚀 Subscriptions ready at ws://localhost:${PORT}${server.subscriptionsPath}`
-    // );
+    console.log(
+      `🚀 Subscriptions ready at ws://localhost:${PORT}${server.subscriptionsPath}`
+    );
   });
 })();
