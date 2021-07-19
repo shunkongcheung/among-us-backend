@@ -80,7 +80,8 @@ class RoomResolver {
     );
 
     const combo = new Permutation(indexes, imposterCount);
-    const imposterIdxs = combo.nth(Math.floor(imposterCount * Math.random()));
+    const total = combo.length;
+    const imposterIdxs = combo.nth(Math.floor(total * Math.random()));
 
     const imposters = imposterIdxs.map((idx: number) => room.participants[idx]);
     room.imposters = imposters;
