@@ -2,6 +2,7 @@ import { Field, ObjectType } from "type-graphql";
 import { TypeormLoader } from "type-graphql-dataloader";
 import {
   BaseEntity,
+  Column,
   Entity,
   ManyToOne,
   OneToMany,
@@ -29,6 +30,10 @@ class VoteEvent extends BaseEntity {
   @ManyToOne(() => Game)
   @TypeormLoader()
   game: Game;
+
+  @Field()
+  @Column({ default: false })
+  isCompleted: boolean;
 
   @Field({ nullable: true })
   @ManyToOne(() => Player)
