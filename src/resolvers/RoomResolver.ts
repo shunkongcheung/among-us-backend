@@ -1,9 +1,23 @@
-import { Arg, FieldResolver, Mutation, Resolver, Root } from "type-graphql";
+import {
+  Arg,
+  FieldResolver,
+  Mutation,
+  Publisher,
+  PubSub,
+  Resolver,
+  Root,
+  Subscription,
+} from "type-graphql";
 import { Permutation } from "../../node_modules/js-combinatorics/umd/combinatorics.js";
 
+import { ROOM_SUBSCRIPTION } from "../constants";
 import { Game, Player, Room } from "../entities";
+import { GraphQLContext } from "../GraphQLContext";
 
-const TOTAL_TASK_COUNT = 20;
+interface FilterArgs {
+  context: GraphQLContext;
+  payload: Room;
+}
 
 @Resolver(() => Room)
 class RoomResolver {
@@ -43,7 +57,6 @@ class RoomResolver {
     room.game = game;
     room.code = await getUniqueRandStr();
     room.completeCount = 0;
-    room.totalTask = TOTAL_TASK_COUNT;
     await room.save();
 
     return room;
@@ -74,6 +87,55 @@ class RoomResolver {
     room.startAt = new Date();
     await room.save();
 
+    return room;
+  }
+
+  @Mutation(() => Room)
+  async endRoom(
+    @Arg("roomId") roomId: number,
+    @PubSub(ROOM_SUBSCRIPTION) publish: Publisher<Room>
+  ) {
+    const room = await Room.findOneOrFail({
+      where: { id: roomId },
+      relations: ["game"],
+    });
+
+    const { startAt, endAt } = room;
+    const { durationMinute } = room.game;
+
+    if (!!endAt) return room;
+
+    const curr = new Date();
+    const difference = curr.getTime() - startAt.getTime();
+    const diffMin = Math.ceil(difference / (1000 * 60));
+
+    if (diffMin > durationMinute) {
+      room.endAt = new Date();
+      await room.save();
+      await publish(room);
+    }
+
+    return room;
+  }
+
+  // subscribe to room
+  @Subscription({
+    topics: ROOM_SUBSCRIPTION,
+    filter: async (args: FilterArgs) => {
+      const { payload, context } = args;
+      const { req } = context;
+      const playerId = req.headers["Authorization"];
+
+      const room = await Room.createQueryBuilder("room")
+        .innerJoin("room.participants", "participants")
+        .where("participants.id = :playerId", { playerId })
+        .andWhere("room.id = :roomId", { roomId: payload.id })
+        .getOne();
+
+      return !!room;
+    },
+  })
+  onRoomChange(@Root() room: Room): Room {
     return room;
   }
 }

@@ -6,7 +6,6 @@ import {
   Query,
   Resolver,
   Mutation,
-  Arg,
   Args,
   ArgsType,
 } from "type-graphql";
@@ -27,7 +26,7 @@ class CheckPointInputType {
   longitude: number;
 }
 
-@InputType()
+@ArgsType()
 class GameInputType {
   @Field()
   name: string;
@@ -39,6 +38,14 @@ class GameInputType {
   @Field()
   @Min(1)
   imposterCount: number;
+
+  @Field()
+  @Min(1)
+  totalTask: number;
+
+  @Field()
+  @Min(1)
+  durationMinute: number;
 
   @Field(() => [CheckPointInputType])
   checkPoints: Array<CheckPointInputType>;
@@ -92,12 +99,14 @@ class GameResolver {
   }
 
   @Mutation(() => Game)
-  async createGame(@Arg("game") gameInput: GameInputType) {
+  async createGame(@Args() gameInput: GameInputType) {
     const game = new Game();
     game.name = gameInput.name;
 
     game.maxParticipantCount = gameInput.maxParticipantCount;
     game.imposterCount = gameInput.imposterCount;
+    game.totalTask = gameInput.totalTask;
+    game.durationMinute = gameInput.durationMinute;
 
     game.latitude = gameInput.latitude;
     game.longitude = gameInput.longitude;

@@ -29,6 +29,14 @@ class Game extends BaseEntity {
   @Column({ type: "int" })
   imposterCount: number;
 
+  @Field()
+  @Column()
+  totalTask: number;
+
+  @Field()
+  @Column()
+  durationMinute: number;
+
   @Field(() => [CheckPoint])
   @OneToMany(() => CheckPoint, (checkPoint) => checkPoint.game)
   @TypeormLoader()

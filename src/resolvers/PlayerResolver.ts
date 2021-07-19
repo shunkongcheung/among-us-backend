@@ -1,22 +1,7 @@
-import {
-  Arg,
-  Mutation,
-  Subscription,
-  PubSub,
-  Publisher,
-  Root,
-  Resolver,
-} from "type-graphql";
+import { Arg, Mutation, PubSub, Publisher, Resolver } from "type-graphql";
 
+import { ROOM_SUBSCRIPTION } from "../constants";
 import { Room, Player } from "../entities";
-import { GraphQLContext } from "../GraphQLContext";
-
-const ROOM_SUBSCRIPTION = "ROOM_SUBSCRIPTION";
-
-interface FilterArgs {
-  context: GraphQLContext;
-  payload: Room;
-}
 
 @Resolver()
 class PlayerResolver {
@@ -56,11 +41,14 @@ class PlayerResolver {
     @Arg("roomId") roomId: number,
     @PubSub(ROOM_SUBSCRIPTION) publish: Publisher<Room>
   ) {
-    const room = await Room.findOneOrFail(roomId);
+    const room = await Room.findOneOrFail({
+      where: { id: roomId },
+      relations: ["game"],
+    });
     room.completeCount++;
 
     // complete enough task to win this game
-    if (room.completeCount >= room.totalTask) room.endAt = new Date();
+    if (room.completeCount >= room.game.totalTask) room.endAt = new Date();
     await room.save();
 
     // trigger subscription event
@@ -124,27 +112,6 @@ class PlayerResolver {
   //   await room.save();
   //   return room;
   // }
-
-  // subscribe to room
-  @Subscription({
-    topics: ROOM_SUBSCRIPTION,
-    filter: async (args: FilterArgs) => {
-      const { payload, context } = args;
-      const { req } = context;
-      const playerId = req.headers["Authorization"];
-
-      const room = await Room.createQueryBuilder("room")
-        .innerJoin("room.participants", "participants")
-        .where("participants.id = :playerId", { playerId })
-        .andWhere("room.id = :roomId", { roomId: payload.id })
-        .getOne();
-
-      return !!room;
-    },
-  })
-  onRoomChange(@Root() room: Room): Room {
-    return room;
-  }
 }
 
 export default PlayerResolver;

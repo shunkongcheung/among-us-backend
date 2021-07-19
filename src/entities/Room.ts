@@ -53,15 +53,11 @@ class Room extends BaseEntity {
   @Column({ type: "integer" })
   completeCount: number;
 
-  @Field(() => Int)
-  @Column({ type: "integer" })
-  totalTask: number;
-
-  @Field()
+  @Field({ nullable: true })
   @Column({ nullable: true })
   startAt?: Date;
 
-  @Field()
+  @Field({ nullable: true })
   @Column({ nullable: true })
   endAt?: Date;
 }
