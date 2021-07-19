@@ -71,7 +71,10 @@ class RoomResolver {
   }
 
   @Mutation(() => Room)
-  async startRoom(@Arg("roomId") roomId: number) {
+  async startRoom(
+    @Arg("roomId") roomId: number,
+    @PubSub(ROOM_SUBSCRIPTION) publish: Publisher<Room>
+  ) {
     const room = await Room.findOneOrFail({
       where: { id: roomId },
       relations: ["game", "participants"],
@@ -96,6 +99,8 @@ class RoomResolver {
     room.imposters = imposters;
     room.startAt = new Date();
     await room.save();
+
+    await publish(room);
 
     return room;
   }
