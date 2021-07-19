@@ -20,6 +20,15 @@ interface FilterArgs {
 
 @Resolver(() => Room)
 class RoomResolver {
+  @FieldResolver(() => Game)
+  async game(@Root() root: Game) {
+    const room = await Room.findOne({
+      where: { id: root.id },
+      relations: ["game"],
+    });
+    return room.game;
+  }
+
   @FieldResolver(() => [Player])
   async survivers(@Root() root: Room) {
     const room = await Room.findOne({
