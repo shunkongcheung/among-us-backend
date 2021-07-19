@@ -56,11 +56,14 @@ class PlayerResolver {
     @Arg("roomId") roomId: number,
     @PubSub(ROOM_SUBSCRIPTION) publish: Publisher<Room>
   ) {
-    const room = await Room.findOneOrFail(roomId);
+    const room = await Room.findOneOrFail({
+      where: { id: roomId },
+      relations: ["game"],
+    });
     room.completeCount++;
 
     // complete enough task to win this game
-    if (room.completeCount >= room.totalTask) room.endAt = new Date();
+    if (room.completeCount >= room.game.totalTask) room.endAt = new Date();
     await room.save();
 
     // trigger subscription event
