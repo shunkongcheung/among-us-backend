@@ -33,6 +33,7 @@ import { GraphQLContext } from "./GraphQLContext";
       onConnect: async (headers) => {
         return { req: { headers } };
       },
+      path: "/subscriptions",
     },
     context: ({ req, res, connection }): GraphQLContext => {
       if (!req || !req.headers) return connection.context;
