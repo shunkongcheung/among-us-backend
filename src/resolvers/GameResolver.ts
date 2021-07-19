@@ -77,28 +77,6 @@ class GameFilter {
   }
 }
 
-// const getRandomStr = (length = 8) => {
-//   // Declare all characters
-//   let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-//   // Pick characers randomly
-//   let str = "";
-//   for (let i = 0; i < length; i++) {
-//     str += chars.charAt(Math.floor(Math.random() * chars.length));
-//   }
-
-//   return str;
-// };
-
-// const getUniqueRandStr = async () => {
-//   let done = false;
-//   while (!done) {
-//     const rand = getRandomStr();
-//     const game = await Game.findOne({ code: rand });
-//     if (!game) return rand;
-//   }
-// };
-
 @Resolver()
 class GameResolver {
   @Query(() => [Game])
@@ -117,7 +95,6 @@ class GameResolver {
   async createGame(@Arg("game") gameInput: GameInputType) {
     const game = new Game();
     game.name = gameInput.name;
-    // game.code = await getUniqueRandStr();
 
     game.maxParticipantCount = gameInput.maxParticipantCount;
     game.imposterCount = gameInput.imposterCount;
