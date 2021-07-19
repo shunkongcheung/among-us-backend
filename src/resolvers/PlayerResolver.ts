@@ -1,21 +1,47 @@
-import { Arg, Mutation, PubSub, Publisher, Resolver } from "type-graphql";
+import {
+  Arg,
+  Field,
+  InputType,
+  Mutation,
+  PubSub,
+  Publisher,
+  Resolver,
+} from "type-graphql";
 
 import { ROOM_SUBSCRIPTION } from "../constants";
 import { Room, Player } from "../entities";
 
+@InputType()
+class PlayerInputType {
+  @Field()
+  name: string;
+
+  @Field()
+  hat: string;
+
+  @Field()
+  color: string;
+}
+
 @Resolver()
 class PlayerResolver {
   @Mutation(() => Player)
-  async register(@Arg("name") name: string) {
+  async register(@Arg("player") playerInput: PlayerInputType) {
     const player = new Player();
-    player.name = name;
+    player.name = playerInput.name;
+    player.color = playerInput.color;
+    player.hat = playerInput.hat;
     await player.save();
 
     return player;
   }
 
   @Mutation(() => Room)
-  async join(@Arg("playerId") playerId: number, @Arg("code") code: string) {
+  async join(
+    @Arg("playerId") playerId: number,
+    @Arg("code") code: string,
+    @PubSub(ROOM_SUBSCRIPTION) publish: Publisher<Room>
+  ) {
     const [player, room] = await Promise.all([
       Player.findOne(playerId),
       Room.findOne({
@@ -36,6 +62,8 @@ class PlayerResolver {
     room.survivers.push(player);
     room.participants.push(player);
     await room.save();
+
+    await publish(room);
 
     return room;
   }
