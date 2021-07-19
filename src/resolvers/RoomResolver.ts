@@ -68,6 +68,7 @@ class RoomResolver {
       where: { id: roomId },
       relations: ["game", "participants"],
     });
+    if (!!room.startAt) throw new Error("Room already started");
 
     const { imposterCount } = room.game;
     const participantsCount = room.participants.length;
