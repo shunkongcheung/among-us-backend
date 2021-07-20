@@ -9,6 +9,8 @@ import {
   Arg,
   Args,
   ArgsType,
+  FieldResolver,
+  Root,
 } from "type-graphql";
 import { ILike } from "typeorm";
 
@@ -85,8 +87,17 @@ class GameFilter {
   }
 }
 
-@Resolver()
+@Resolver(() => Game)
 class GameResolver {
+  @FieldResolver(() => CheckPoint)
+  async checkPoints(@Root() root: Game) {
+    const game = await Game.findOne({
+      where: { id: root.id },
+      relations: ["checkPoints"],
+    });
+    return game.checkPoints;
+  }
+
   @Query(() => [Game])
   games(@Args() args: GameFilter) {
     const { id, name, count: take, skip } = args;
@@ -100,7 +111,7 @@ class GameResolver {
   }
 
   @Mutation(() => Game)
-  async createGame(@Arg('game') gameInput: GameInputType) {
+  async createGame(@Arg("game") gameInput: GameInputType) {
     const game = new Game();
     game.name = gameInput.name;
 
