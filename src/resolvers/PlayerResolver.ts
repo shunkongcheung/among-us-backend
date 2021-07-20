@@ -26,8 +26,13 @@ class PlayerInputType {
 @Resolver()
 class PlayerResolver {
   @Mutation(() => Player)
-  async register(@Arg("player") playerInput: PlayerInputType) {
-    const player = new Player();
+  async editUser(
+    @Arg("player") playerInput: PlayerInputType,
+    @Arg("playerId", { nullable: true }) playerId?: number
+  ) {
+    const player = !!playerId
+      ? await Player.findOneOrFail(playerId)
+      : new Player();
     player.name = playerInput.name;
     player.color = playerInput.color;
     player.hat = playerInput.hat;
