@@ -6,10 +6,17 @@ import {
   PubSub,
   Publisher,
   Resolver,
+  Root,
+  Subscription,
 } from "type-graphql";
 
-import {  ROOM_SUBSCRIPTION } from "../constants";
+import { PLAYER_LOCATION_SUBSCRIPTION, ROOM_SUBSCRIPTION } from "../constants";
 import { Room, Player } from "../entities";
+
+interface FilterArgs {
+  payload: Player;
+  args: { playerId: number };
+}
 
 @InputType()
 class PlayerInputType {
@@ -36,8 +43,25 @@ class PlayerResolver {
     player.name = playerInput.name;
     player.color = playerInput.color;
     player.hat = playerInput.hat;
+    player.latitude = 0;
+    player.longitude = 0;
     await player.save();
 
+    return player;
+  }
+
+  @Mutation(() => Player)
+  async editPlayerLocation(
+    @Arg("playerId") playerId: number,
+    @Arg("latitude") latitude: number,
+    @Arg("longitude") longitude: number,
+    @PubSub(PLAYER_LOCATION_SUBSCRIPTION) publish: Publisher<Player>
+  ) {
+    const player = await Player.findOneOrFail(playerId);
+    player.latitude = latitude;
+    player.longitude = longitude;
+    await player.save();
+    await publish(player);
     return player;
   }
 
@@ -93,6 +117,41 @@ class PlayerResolver {
 
     return room;
   }
+
+  @Subscription({
+    topics: PLAYER_LOCATION_SUBSCRIPTION,
+    filter: async ({ payload, args }: FilterArgs) => {
+      const { playerId } = args;
+
+      const [payloadPlayerRoomIds, requestPlayerRoomIds] = await Promise.all([
+        getParticipatedRoomIds(payload.id),
+        getParticipatedRoomIds(playerId),
+      ]);
+
+      if (!payloadPlayerRoomIds.length || !requestPlayerRoomIds.length)
+        return false;
+
+      const isInterseted = !!payloadPlayerRoomIds.find((itm) =>
+        requestPlayerRoomIds.includes(itm)
+      );
+      return isInterseted;
+    },
+  })
+  onPlayerLocation(@Arg("playerId") _: number, @Root() player: Player): Player {
+    return player;
+  }
 }
+
+const getParticipatedRoomIds = async (playerId: number) => {
+  const rooms = await Room.createQueryBuilder("room")
+    .select("room.id")
+    .leftJoin("room.participants", "participants")
+    .where("participants.id = :playerId", { playerId })
+    .andWhere("NOT room.startAt IS NULL")
+    .andWhere("room.endAt IS NULL")
+    .getMany();
+
+  return rooms.map((itm) => itm.id);
+};
 
 export default PlayerResolver;
