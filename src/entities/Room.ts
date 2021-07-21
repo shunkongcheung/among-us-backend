@@ -8,9 +8,11 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
 
+import Corpse from "./Corpse";
 import Game from "./Game";
 import Player from "./Player";
 
@@ -48,6 +50,12 @@ class Room extends BaseEntity {
   @ManyToMany(() => Player)
   @TypeormLoader()
   survivers: Array<Player>;
+
+  @Field(() => [Corpse])
+  @JoinTable()
+  @OneToMany(() => Corpse, (corpse) => corpse.room)
+  @TypeormLoader()
+  corpses: Array<Corpse>;
 
   @Field(() => Int)
   @Column({ type: "integer" })

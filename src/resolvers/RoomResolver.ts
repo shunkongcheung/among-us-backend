@@ -120,7 +120,7 @@ class RoomResolver {
 
     if (!!endAt) return room;
 
-    if(!startAt) throw new Error('Room hasnt been started yet');
+    if (!startAt) throw new Error("Room hasnt been started yet");
 
     const curr = new Date();
     const difference = curr.getTime() - startAt.getTime();
@@ -150,7 +150,7 @@ class RoomResolver {
       return !!room;
     },
   })
-  onRoomChange(@Arg("playerId") playerId: number, @Root() room: Room): Room {
+  onRoomChange(@Arg("playerId") _: number, @Root() room: Room): Room {
     return room;
   }
 }
