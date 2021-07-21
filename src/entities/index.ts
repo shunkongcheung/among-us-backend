@@ -1,4 +1,5 @@
 import CheckPoint from "./CheckPoint";
+import Corpse from "./Corpse";
 import Game from "./Game";
 import Player from "./Player";
 import Room from "./Room";
