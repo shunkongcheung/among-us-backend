@@ -164,7 +164,7 @@ class VoteResolver {
       if (isFinished) room.endAt = new Date();
 
       await room.save();
-      if (isFinished) await publishRoom(room);
+      await publishRoom(room);
     }
 
     await publishVote(voteEvent);
