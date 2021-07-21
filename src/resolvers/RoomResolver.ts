@@ -120,6 +120,8 @@ class RoomResolver {
 
     if (!!endAt) return room;
 
+    if(!startAt) throw new Error('Room hasnt been started yet');
+
     const curr = new Date();
     const difference = curr.getTime() - startAt.getTime();
     const diffMin = Math.ceil(difference / (1000 * 60));
