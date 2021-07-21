@@ -87,7 +87,7 @@ class VoteResolver {
     @PubSub(ROOM_SUBSCRIPTION) publishRoom: Publisher<Room>,
     @Arg("voteEventId") voteEventId: number,
     @Arg("voteById") voteById: number,
-    @Arg("voteForId") voteForId?: number
+    @Arg("voteForId", { nullable: true }) voteForId?: number
   ) {
     let voteEvent = await VoteEvent.findOne({
       where: { id: voteEventId },
