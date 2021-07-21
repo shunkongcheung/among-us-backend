@@ -19,6 +19,14 @@ class Player extends BaseEntity {
   @Field()
   @Column()
   hat: string;
+
+  @Field()
+  @Column({ type: "float", default: 0.0 })
+  latitude: number;
+
+  @Field()
+  @Column({ type: "float", default: 0.0 })
+  longitude: number;
 }
 
 export default Player;
